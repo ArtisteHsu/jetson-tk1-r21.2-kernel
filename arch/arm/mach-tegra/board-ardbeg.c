@@ -1499,10 +1499,6 @@ static void __init tegra_ardbeg_dt_init(void)
 
 static void __init tegra_ardbeg_reserve(void)
 {
-#ifdef CONFIG_TEGRA_HDMI_PRIMARY
-	ulong tmp;
-#endif /* CONFIG_TEGRA_HDMI_PRIMARY */
-
 #if defined(CONFIG_NVMAP_CONVERT_CARVEOUT_TO_IOVMM) || \
 		defined(CONFIG_TEGRA_NO_CARVEOUT)
 	ulong carveout_size = 0;
@@ -1518,13 +1514,6 @@ static void __init tegra_ardbeg_reserve(void)
 	/* support FBcon on 4K monitors */
 	fb2_size = SZ_64M + SZ_8M;	/* 4096*2160*4*2 = 70778880 bytes */
 #endif /* CONFIG_FRAMEBUFFER_CONSOLE */
-
-#ifdef CONFIG_TEGRA_HDMI_PRIMARY
-	tmp = fb1_size;
-	fb1_size = fb2_size;
-	fb2_size = tmp;
-#endif /* CONFIG_TEGRA_HDMI_PRIMARY */
-
 	tegra_reserve4(carveout_size, fb1_size, fb2_size, vpr_size);
 }
 

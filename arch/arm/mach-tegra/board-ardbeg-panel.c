@@ -71,7 +71,6 @@ struct platform_device * __init ardbeg_host1x_init(void)
 static struct regulator *ardbeg_hdmi_reg;
 static struct regulator *ardbeg_hdmi_pll;
 static struct regulator *ardbeg_hdmi_vddio;
-
 #ifndef CONFIG_TEGRA_HDMI_PRIMARY
 static struct resource ardbeg_disp1_resources[] = {
 	{
@@ -163,28 +162,17 @@ static struct resource ardbeg_disp1_edp_resources[] = {
 	},
 };
 #endif
-
 static struct resource ardbeg_disp2_resources[] = {
 	{
 		.name	= "irq",
-#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 		.start	= INT_DISPLAY_B_GENERAL,
 		.end	= INT_DISPLAY_B_GENERAL,
-#else
-		.start	= INT_DISPLAY_GENERAL,
-		.end	= INT_DISPLAY_GENERAL,
-#endif
 		.flags	= IORESOURCE_IRQ,
 	},
 	{
 		.name	= "regs",
-#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 		.start	= TEGRA_DISPLAY2_BASE,
 		.end	= TEGRA_DISPLAY2_BASE + TEGRA_DISPLAY2_SIZE - 1,
-#else
-		.start	= TEGRA_DISPLAY_BASE,
-		.end	= TEGRA_DISPLAY_BASE + TEGRA_DISPLAY_SIZE - 1,
-#endif
 		.flags	= IORESOURCE_MEM,
 	},
 	{
@@ -479,12 +467,7 @@ static struct tegra_dc_mode hdmi_panel_modes[] = {
 static struct tegra_dc_out ardbeg_disp2_out = {
 	.type		= TEGRA_DC_OUT_HDMI,
 	.flags		= TEGRA_DC_OUT_HOTPLUG_HIGH,
-#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 	.parent_clk	= "pll_d2",
-#else
-	.parent_clk	= "pll_d",
-#endif /* CONFIG_TEGRA_HDMI_PRIMARY */
-
 	.ddc_bus	= 3,
 	.hotplug_gpio	= ardbeg_hdmi_hpd,
 	.hdmi_out	= &ardbeg_hdmi_out,
@@ -542,18 +525,13 @@ static struct tegra_dc_platform_data ardbeg_disp2_pdata = {
 
 static struct platform_device ardbeg_disp2_device = {
 	.name		= "tegradc",
-#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 	.id		= 1,
-#else
-	.id		= 0,
-#endif
 	.resource	= ardbeg_disp2_resources,
 	.num_resources	= ARRAY_SIZE(ardbeg_disp2_resources),
 	.dev = {
 		.platform_data = &ardbeg_disp2_pdata,
 	},
 };
-
 #ifndef CONFIG_TEGRA_HDMI_PRIMARY
 static struct platform_device ardbeg_disp1_device = {
 	.name		= "tegradc",
@@ -565,7 +543,6 @@ static struct platform_device ardbeg_disp1_device = {
 	},
 };
 #endif
-
 static struct nvmap_platform_carveout ardbeg_carveouts[] = {
 	[0] = {
 		.name		= "iram",
@@ -601,6 +578,7 @@ static struct platform_device ardbeg_nvmap_device  = {
 		.platform_data = &ardbeg_nvmap_data,
 	},
 };
+#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 static struct tegra_io_dpd dsic_io = {
 	.name			= "DSIC",
 	.io_dpd_reg_index	= 1,
@@ -688,7 +666,6 @@ static struct tegra_dp_out dp_settings = {
 	.tx_pu_disable = true,
 };
 
-#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 /* can be called multiple times */
 static struct tegra_panel *ardbeg_panel_configure(struct board_info *board_out,
 	u8 *dsi_instance_out)
@@ -830,7 +807,6 @@ static void ardbeg_panel_select(void)
 
 }
 #endif
-
 int __init ardbeg_panel_init(void)
 {
 	int err = 0;
@@ -982,12 +958,10 @@ int __init ardbeg_panel_init(void)
 
 	if (!of_have_populated_dt() || !dc2_node ||
 		!of_device_is_available(dc2_node)) {
-#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 		res = platform_get_resource_byname(&ardbeg_disp2_device,
 					IORESOURCE_MEM, "fbmem");
 		res->start = tegra_fb2_start;
 		res->end = tegra_fb2_start + tegra_fb2_size - 1;
-#endif
 		ardbeg_disp2_device.dev.parent = &phost1x->dev;
 		err = platform_device_register(&ardbeg_disp2_device);
 		if (err) {
@@ -1001,11 +975,15 @@ int __init ardbeg_panel_init(void)
 
 int __init ardbeg_display_init(void)
 {
+#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 	struct clk *disp1_clk = clk_get_sys("tegradc.0", NULL);
+#endif
 	struct clk *disp2_clk = clk_get_sys("tegradc.1", NULL);
+#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 	struct tegra_panel *panel;
 	struct board_info board;
 	long disp1_rate = 0;
+#endif
 	long disp2_rate = 0;
 
 	/*
@@ -1013,7 +991,7 @@ int __init ardbeg_display_init(void)
 	 * Need to skip ardbeg_display_init
 	 * when disp is registered by device_tree
 	 */
-
+#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 	if (WARN_ON(IS_ERR(disp1_clk))) {
 		if (disp2_clk && !IS_ERR(disp2_clk))
 			clk_put(disp2_clk);
@@ -1025,7 +1003,6 @@ int __init ardbeg_display_init(void)
 		return PTR_ERR(disp1_clk);
 	}
 
-#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 	panel = ardbeg_panel_configure(&board, NULL);
 
 	if (panel && panel->init_dc_out) {
@@ -1051,12 +1028,13 @@ int __init ardbeg_display_init(void)
 	printk(KERN_DEBUG "disp2 pclk=%ld\n", disp2_rate);
 	if (disp2_rate)
 #ifndef CONFIG_TEGRA_HDMI_PRIMARY
-		tegra_dvfs_resolve_override(disp2_clk, disp2_rate);
-#else
 		tegra_dvfs_resolve_override(disp1_clk, disp2_rate);
+#else
+		tegra_dvfs_resolve_override(disp2_clk, disp2_rate);
 #endif
-
+#ifndef CONFIG_TEGRA_HDMI_PRIMARY
 	clk_put(disp1_clk);
+#endif
 	clk_put(disp2_clk);
 	return 0;
 }
