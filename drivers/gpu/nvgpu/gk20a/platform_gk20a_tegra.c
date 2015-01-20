@@ -543,7 +543,7 @@ struct gk20a_platform gk20a_tegra_platform = {
 	/* power management configuration */
 	.railgate_delay		= 500,
 	.clockgate_delay	= 50,
-	.can_railgate		= true,
+	.can_railgate		= false,
 
 	.probe = gk20a_tegra_probe,
 	.late_probe = gk20a_tegra_late_probe,
