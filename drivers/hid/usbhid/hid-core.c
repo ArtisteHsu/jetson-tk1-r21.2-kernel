@@ -1190,6 +1190,8 @@ static int usbhid_start(struct hid_device *hid)
 				USB_INTERFACE_PROTOCOL_MOUSE)
 		usb_disable_autosuspend(dev);
 #endif
+	else if (hid->quirks & HID_QUIRK_SLOW_WAKE)
+		usb_disable_autosuspend(dev);
 	return 0;
 
 fail:
